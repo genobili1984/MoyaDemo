@@ -13,11 +13,26 @@ import Alamofire
 enum AppService: TargetType {
     case login(username: String, pwd: String)
     case video
+    case wikiSearch(query:String)
+    case queryYoutube(page:Int)
 }
+
+//http://api.letsbuildthatapp.com/youtube/course_detail?id=1
 
 extension AppService {
     var baseURL: URL {
-        return URL(string: API_PRO)!
+        var str:String = ""
+        switch self {
+        case .login:
+            str = API_PRO
+        case .video:
+            str = API_PRO
+        case .wikiSearch:
+            str = "http://en.wikipedia.org"
+        case .queryYoutube:
+            str = "http://api.letsbuildthatapp.com"
+        }
+        return URL(string: str)!
     }
     
     var path: String {
@@ -26,6 +41,10 @@ extension AppService {
             return "/login"
         case .video:
             return "/video"
+        case .wikiSearch(query:_):
+            return "/w/api.php"
+        case .queryYoutube:
+            return "/youtube/course_detail"
         }
     }
     
@@ -35,22 +54,12 @@ extension AppService {
             return .get
         case .video:
             return .post
+        case .wikiSearch:
+            return .get
+        case .queryYoutube:
+            return .get
         }
     }
-    
-    var parameters: [String: Any]? {
-        switch self {
-        case .login(username: let username, pwd: let pwd):
-            return ["username": username, "pwd": pwd]
-        case .video:
-            return ["type": "JSON"]
-        }
-    }
-    
-    var parameterEncoding: ParameterEncoding {
-        return URLEncoding.default
-    }
-    
     
     var sampleData: Data {
         var str:String = ""
@@ -68,11 +77,20 @@ extension AppService {
     }
     
     var task: Task {
-        return .requestPlain
+        switch self {
+        case .wikiSearch(query: let query):
+            return .requestParameters(parameters:["action":"opensearch", "search":query], encoding: URLEncoding.default)
+        case .login(username: let username, pwd: let password):
+            return .requestParameters(parameters: ["username": username, "pwd": password], encoding: URLEncoding.default)
+        case .queryYoutube(page: let page):
+            return .requestParameters(parameters: ["id" : page], encoding: URLEncoding.default)
+        default:
+            return .requestPlain
+        }
     }
     
     var headers: [String: String]? {
-        return nil
+            return nil
     }
 }
 
